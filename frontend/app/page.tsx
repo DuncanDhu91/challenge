@@ -15,96 +15,104 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
   const [payment, setPayment] = useState<Payment | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [demoMode, setDemoMode] = useState(true); // Start with demo mode
+  const [demoMode, setDemoMode] = useState(true); // Always start with demo mode
   const [apiUrl, setApiUrl] = useState('');
 
   // Detect if we're in demo mode on client side
   useEffect(() => {
-    const url = process.env.NEXT_PUBLIC_API_URL || '';
-    setApiUrl(url || 'http://localhost:8000');
-    setDemoMode(!url); // Demo mode if no API URL is set
+    // Force demo mode for Vercel deployment (always use demo mode)
+    setDemoMode(true);
+    setApiUrl('http://localhost:8000');
+
+    // Uncomment this if you want to enable real API mode later:
+    // const url = process.env.NEXT_PUBLIC_API_URL || '';
+    // if (url && url !== '') {
+    //   setApiUrl(url);
+    //   setDemoMode(false);
+    // }
   }, []);
 
   const createPayment = async () => {
     setLoading(true);
     setError(null);
 
+    // Demo mode: always simulate backend response
     try {
-      if (demoMode) {
-        // Demo mode: simulate backend response
-        await new Promise(resolve => setTimeout(resolve, 800)); // Simulate network delay
+      await new Promise(resolve => setTimeout(resolve, 800)); // Simulate network delay
 
-        const paymentData: Payment = {
-          payment_id: `pay_demo_${Math.random().toString(36).substring(7)}`,
-          status: 'pending',
-          redirect_url: 'https://banco-azul.example.com/pay/demo',
-          amount: '50000',
-          currency: 'COP'
-        };
+      const paymentData: Payment = {
+        payment_id: `pay_demo_${Math.random().toString(36).substring(7)}`,
+        status: 'pending',
+        redirect_url: 'https://banco-azul.example.com/pay/demo',
+        amount: '50000',
+        currency: 'COP'
+      };
 
-        setPayment(paymentData);
+      setPayment(paymentData);
+      setLoading(false);
 
-        // Simulate redirect to bank
+      // Simulate redirect to bank
+      setTimeout(() => {
         alert(`🏦 Demo Mode: Simulating redirect to Banco Azul\n\nIn production, you'd be redirected to:\n${paymentData.redirect_url}`);
-      } else {
-        // Real API mode
-        const response = await axios.post(`${apiUrl}/payments`, {
-          amount: '50000',
-          currency: 'COP',
-          payment_method: 'PSE',
-          bank: 'banco_azul',
-          customer: {
-            email: 'demo@example.com',
-            name: 'Juan Demo',
-            document: '1234567890'
-          },
-          redirect_url: `${window.location.origin}/return`,
-          idempotency_key: crypto.randomUUID()
-        });
-
-        const paymentData = response.data;
-        setPayment(paymentData);
-
-        // Simulate redirect to bank
-        if (paymentData.redirect_url) {
-          alert(`Redirecting to bank: ${paymentData.redirect_url}\n\n(In real app, you'd be redirected to Banco Azul)`);
-        }
-      }
+      }, 100);
     } catch (err: any) {
-      setError(err.response?.data?.detail || 'Failed to create payment');
-    } finally {
+      console.error('Demo mode error:', err);
+      setError(err.message || 'Failed to create payment');
       setLoading(false);
     }
+
+
+    // Uncomment this block if you want to enable real API mode:
+    // if (!demoMode) {
+    //   const response = await axios.post(`${apiUrl}/payments`, {
+    //     amount: '50000',
+    //     currency: 'COP',
+    //     payment_method: 'PSE',
+    //     bank: 'banco_azul',
+    //     customer: {
+    //       email: 'demo@example.com',
+    //       name: 'Juan Demo',
+    //       document: '1234567890'
+    //     },
+    //     redirect_url: `${window.location.origin}/return`,
+    //     idempotency_key: crypto.randomUUID()
+    //   });
+    //   const paymentData = response.data;
+    //   setPayment(paymentData);
+    //   if (paymentData.redirect_url) {
+    //     alert(`Redirecting to bank: ${paymentData.redirect_url}`);
+    //   }
+    // }
+    */
   };
 
   const simulateWebhook = async (status: 'approved' | 'declined') => {
     if (!payment) return;
 
     try {
-      if (demoMode) {
-        // Demo mode: simulate webhook processing
-        await new Promise(resolve => setTimeout(resolve, 500)); // Simulate processing delay
+      // Demo mode: simulate webhook processing
+      await new Promise(resolve => setTimeout(resolve, 500)); // Simulate processing delay
 
-        // Update payment status locally
-        setPayment({
-          ...payment,
-          status: status
-        });
-      } else {
-        // Real API mode
-        await axios.post(`${apiUrl}/webhooks`, {
-          payment_id: payment.payment_id,
-          status: status,
-          timestamp: new Date().toISOString(),
-          signature: 'mock_signature'
-        });
+      // Update payment status locally
+      setPayment({
+        ...payment,
+        status: status
+      });
 
-        // Refresh payment status
-        const response = await axios.get(`${apiUrl}/payments/${payment.payment_id}`);
-        setPayment(response.data);
-      }
+      // Uncomment this for real API mode:
+      // if (!demoMode) {
+      //   await axios.post(`${apiUrl}/webhooks`, {
+      //     payment_id: payment.payment_id,
+      //     status: status,
+      //     timestamp: new Date().toISOString(),
+      //     signature: 'mock_signature'
+      //   });
+      //   const response = await axios.get(`${apiUrl}/payments/${payment.payment_id}`);
+      //   setPayment(response.data);
+      // }
     } catch (err: any) {
-      setError(err.response?.data?.detail || 'Failed to send webhook');
+      console.error('Webhook simulation error:', err);
+      setError(err.message || 'Failed to send webhook');
     }
   };
 
