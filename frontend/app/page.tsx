@@ -4,6 +4,7 @@ import { useState } from 'react';
 import axios from 'axios';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+const DEMO_MODE = !process.env.NEXT_PUBLIC_API_URL; // Use demo mode if no API URL set
 
 interface Payment {
   payment_id: string;
@@ -23,26 +24,45 @@ export default function Home() {
     setError(null);
 
     try {
-      const response = await axios.post(`${API_URL}/payments`, {
-        amount: '50000',
-        currency: 'COP',
-        payment_method: 'PSE',
-        bank: 'banco_azul',
-        customer: {
-          email: 'demo@example.com',
-          name: 'Juan Demo',
-          document: '1234567890'
-        },
-        redirect_url: `${window.location.origin}/return`,
-        idempotency_key: crypto.randomUUID()
-      });
+      if (DEMO_MODE) {
+        // Demo mode: simulate backend response
+        await new Promise(resolve => setTimeout(resolve, 800)); // Simulate network delay
 
-      const paymentData = response.data;
-      setPayment(paymentData);
+        const paymentData: Payment = {
+          payment_id: `pay_demo_${Math.random().toString(36).substring(7)}`,
+          status: 'pending',
+          redirect_url: 'https://banco-azul.example.com/pay/demo',
+          amount: '50000',
+          currency: 'COP'
+        };
 
-      // Simulate redirect to bank
-      if (paymentData.redirect_url) {
-        alert(`Redirecting to bank: ${paymentData.redirect_url}\n\n(In real app, you'd be redirected to Banco Azul)`);
+        setPayment(paymentData);
+
+        // Simulate redirect to bank
+        alert(`🏦 Demo Mode: Simulating redirect to Banco Azul\n\nIn production, you'd be redirected to:\n${paymentData.redirect_url}`);
+      } else {
+        // Real API mode
+        const response = await axios.post(`${API_URL}/payments`, {
+          amount: '50000',
+          currency: 'COP',
+          payment_method: 'PSE',
+          bank: 'banco_azul',
+          customer: {
+            email: 'demo@example.com',
+            name: 'Juan Demo',
+            document: '1234567890'
+          },
+          redirect_url: `${window.location.origin}/return`,
+          idempotency_key: crypto.randomUUID()
+        });
+
+        const paymentData = response.data;
+        setPayment(paymentData);
+
+        // Simulate redirect to bank
+        if (paymentData.redirect_url) {
+          alert(`Redirecting to bank: ${paymentData.redirect_url}\n\n(In real app, you'd be redirected to Banco Azul)`);
+        }
       }
     } catch (err: any) {
       setError(err.response?.data?.detail || 'Failed to create payment');
@@ -55,16 +75,28 @@ export default function Home() {
     if (!payment) return;
 
     try {
-      await axios.post(`${API_URL}/webhooks`, {
-        payment_id: payment.payment_id,
-        status: status,
-        timestamp: new Date().toISOString(),
-        signature: 'mock_signature'
-      });
+      if (DEMO_MODE) {
+        // Demo mode: simulate webhook processing
+        await new Promise(resolve => setTimeout(resolve, 500)); // Simulate processing delay
 
-      // Refresh payment status
-      const response = await axios.get(`${API_URL}/payments/${payment.payment_id}`);
-      setPayment(response.data);
+        // Update payment status locally
+        setPayment({
+          ...payment,
+          status: status
+        });
+      } else {
+        // Real API mode
+        await axios.post(`${API_URL}/webhooks`, {
+          payment_id: payment.payment_id,
+          status: status,
+          timestamp: new Date().toISOString(),
+          signature: 'mock_signature'
+        });
+
+        // Refresh payment status
+        const response = await axios.get(`${API_URL}/payments/${payment.payment_id}`);
+        setPayment(response.data);
+      }
     } catch (err: any) {
       setError(err.response?.data?.detail || 'Failed to send webhook');
     }
@@ -74,6 +106,19 @@ export default function Home() {
     <main className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-8">
       <div className="max-w-4xl mx-auto">
         <div className="bg-white rounded-lg shadow-xl p-8">
+          {/* Demo Mode Badge */}
+          {DEMO_MODE && (
+            <div className="mb-6 bg-blue-50 border border-blue-200 rounded-lg p-3 flex items-center gap-2">
+              <span className="text-2xl">🎭</span>
+              <div>
+                <div className="text-sm font-semibold text-blue-900">Demo Mode Active</div>
+                <div className="text-xs text-blue-600">
+                  Running without backend - all responses are simulated locally
+                </div>
+              </div>
+            </div>
+          )}
+
           <h1 className="text-4xl font-bold text-gray-900 mb-2">
             Banco Azul E2E Demo
           </h1>
