@@ -83,7 +83,6 @@ export default function Home() {
     //     alert(`Redirecting to bank: ${paymentData.redirect_url}`);
     //   }
     // }
-    */
   };
 
   const simulateWebhook = async (status: 'approved' | 'declined') => {
