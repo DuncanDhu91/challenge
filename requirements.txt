@@ -1,0 +1,33 @@
+# Core Testing
+pytest==7.4.3
+pytest-asyncio==0.21.1
+pytest-cov==4.1.0
+pytest-html==4.1.1
+pytest-xdist==3.5.0  # Parallel execution
+pytest-timeout==2.2.0
+
+# HTTP Testing
+httpx==0.25.2
+requests==2.31.0
+
+# Async Testing
+asyncio==3.4.3
+
+# Web Testing (E2E)
+playwright==1.40.0
+pytest-playwright==0.4.3
+
+# Backend API (for running tests)
+fastapi==0.104.1
+uvicorn[standard]==0.24.0
+pydantic==2.5.2
+python-multipart==0.0.6
+
+# Database
+sqlalchemy==2.0.23
+aiosqlite==0.19.0
+
+# Utilities
+python-dotenv==1.0.0
+faker==20.1.0  # Test data generation
+freezegun==1.4.0  # Time manipulation
