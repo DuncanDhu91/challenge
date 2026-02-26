@@ -1,10 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import axios from 'axios';
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
-const DEMO_MODE = !process.env.NEXT_PUBLIC_API_URL; // Use demo mode if no API URL set
 
 interface Payment {
   payment_id: string;
@@ -18,13 +15,22 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
   const [payment, setPayment] = useState<Payment | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [demoMode, setDemoMode] = useState(true); // Start with demo mode
+  const [apiUrl, setApiUrl] = useState('');
+
+  // Detect if we're in demo mode on client side
+  useEffect(() => {
+    const url = process.env.NEXT_PUBLIC_API_URL || '';
+    setApiUrl(url || 'http://localhost:8000');
+    setDemoMode(!url); // Demo mode if no API URL is set
+  }, []);
 
   const createPayment = async () => {
     setLoading(true);
     setError(null);
 
     try {
-      if (DEMO_MODE) {
+      if (demoMode) {
         // Demo mode: simulate backend response
         await new Promise(resolve => setTimeout(resolve, 800)); // Simulate network delay
 
@@ -42,7 +48,7 @@ export default function Home() {
         alert(`🏦 Demo Mode: Simulating redirect to Banco Azul\n\nIn production, you'd be redirected to:\n${paymentData.redirect_url}`);
       } else {
         // Real API mode
-        const response = await axios.post(`${API_URL}/payments`, {
+        const response = await axios.post(`${apiUrl}/payments`, {
           amount: '50000',
           currency: 'COP',
           payment_method: 'PSE',
@@ -75,7 +81,7 @@ export default function Home() {
     if (!payment) return;
 
     try {
-      if (DEMO_MODE) {
+      if (demoMode) {
         // Demo mode: simulate webhook processing
         await new Promise(resolve => setTimeout(resolve, 500)); // Simulate processing delay
 
@@ -86,7 +92,7 @@ export default function Home() {
         });
       } else {
         // Real API mode
-        await axios.post(`${API_URL}/webhooks`, {
+        await axios.post(`${apiUrl}/webhooks`, {
           payment_id: payment.payment_id,
           status: status,
           timestamp: new Date().toISOString(),
@@ -94,7 +100,7 @@ export default function Home() {
         });
 
         // Refresh payment status
-        const response = await axios.get(`${API_URL}/payments/${payment.payment_id}`);
+        const response = await axios.get(`${apiUrl}/payments/${payment.payment_id}`);
         setPayment(response.data);
       }
     } catch (err: any) {
@@ -107,7 +113,7 @@ export default function Home() {
       <div className="max-w-4xl mx-auto">
         <div className="bg-white rounded-lg shadow-xl p-8">
           {/* Demo Mode Badge */}
-          {DEMO_MODE && (
+          {demoMode && (
             <div className="mb-6 bg-blue-50 border border-blue-200 rounded-lg p-3 flex items-center gap-2">
               <span className="text-2xl">🎭</span>
               <div>
