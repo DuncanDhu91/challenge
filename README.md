@@ -17,8 +17,8 @@ E2E test automation for async payment methods (PSE, PIX, OXXO) with focus on web
 
 ```bash
 # Clone repository
-git clone <repo-url>
-cd banco-azul-e2e
+git clone https://github.com/DuncanDhu91/challenge.git
+cd challenge/banco-azul-e2e
 
 # Install Python dependencies
 pip install -r requirements.txt
